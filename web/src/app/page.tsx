@@ -1,65 +1,111 @@
-import Image from "next/image";
+import {
+  client,
+  queries,
+  type SiteSettings,
+  type Hero as HeroType,
+  type Episode,
+  type CrewMember,
+  type Newsletter as NewsletterType,
+  type EpisodesSection,
+  type CrewSection,
+} from '@/lib/sanity'
 
-export default function Home() {
+import Navbar from '@/components/Navbar'
+import Hero from '@/components/Hero'
+import Episodes from '@/components/Episodes'
+import Crew from '@/components/Crew'
+import Newsletter from '@/components/Newsletter'
+import Footer from '@/components/Footer'
+
+async function getData() {
+  const [siteSettings, hero, episodes, crewMembers, newsletter, episodesSection, crewSection] =
+    await Promise.all([
+      client.fetch<SiteSettings>(queries.siteSettings),
+      client.fetch<HeroType>(queries.hero),
+      client.fetch<Episode[]>(queries.episodes),
+      client.fetch<CrewMember[]>(queries.crewMembers),
+      client.fetch<NewsletterType>(queries.newsletter),
+      client.fetch<EpisodesSection>(queries.episodesSection),
+      client.fetch<CrewSection>(queries.crewSection),
+    ])
+
+  return {
+    siteSettings,
+    hero,
+    episodes,
+    crewMembers,
+    newsletter,
+    episodesSection,
+    crewSection,
+  }
+}
+
+export default async function Home() {
+  const data = await getData()
+
+  // Fallback values if Sanity data is not yet populated
+  const siteSettings = data.siteSettings || {
+    siteName: 'RADIOPIRATA',
+    navLinks: [
+      { label: 'Episodios', href: '#episodios' },
+      { label: 'Tripulación', href: '#tripulacion' },
+      { label: 'Nakamas', href: '#comunidad' },
+    ],
+    ctaButton: { label: 'Escuchar Ahora', href: '#escuchar' },
+    socialLinks: {},
+    copyright: '© 2023 RadioPirata. No afiliado oficialmente con Shueisha o Toei Animation.',
+    footerText: 'Hecho con Haki por un desarrollador nakama.',
+    colors: {
+      primary: '#D92525',
+      secondary: '#F2CB05',
+      accent: '#0F3D59',
+      background: '#1a1a1a',
+      paper: '#F2E3C9',
+    },
+  }
+
+  const hero = data.hero || {
+    title: '¡Zarpamos hacia el',
+    highlightedText: 'One Piece!',
+    subtitle: 'El podcast definitivo para nakamas. Teorías, análisis, humor y debates sobre el mundo de Eiichiro Oda.',
+    icon: 'anchor',
+    ctaButtons: [
+      { label: 'Ver Episodios', href: '#episodios', style: 'primary' as const },
+      { label: 'Spotify', href: 'https://spotify.com', icon: 'headphones', style: 'spotify' as const },
+    ],
+  }
+
+  const episodesSection = data.episodesSection || {
+    title: 'Log Pose: Últimos Viajes',
+    playButtonText: 'Reproducir',
+  }
+
+  const episodes = data.episodes || []
+
+  const crewSection = data.crewSection || {
+    title: 'La Tripulación',
+    subtitle: 'Conoce a las voces detrás del micrófono. ¡Cuidado, sus recompensas son altas!',
+  }
+
+  const crewMembers = data.crewMembers || []
+
+  const newsletter = data.newsletter || {
+    title: '¡Únete a la Gran Flota!',
+    subtitle: 'Recibe noticias de Oda-sensei, avisos de nuevos episodios y teorías exclusivas directamente en tu Den Den Mushi (email).',
+    placeholder: 'Tu correo electrónico...',
+    buttonText: 'Suscribirse',
+    successMessage: '¡Gracias Nakama! Te has unido a la flota.',
+    icon: 'mail',
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+    <>
+      <Navbar settings={siteSettings} />
+      <Hero hero={hero} />
+      <Episodes section={episodesSection} episodes={episodes} />
+      <Crew section={crewSection} members={crewMembers} />
+      <Newsletter newsletter={newsletter} />
+      <Footer settings={siteSettings} />
+    </>
+  )
 }

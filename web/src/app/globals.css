@@ -1,26 +1,68 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #1a1a1a;
+  --foreground: #f3f4f6;
+  --op-red: #D92525;
+  --op-gold: #F2CB05;
+  --op-blue: #0F3D59;
+  --op-paper: #F2E3C9;
+  --op-dark: #1a1a1a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-op-red: var(--op-red);
+  --color-op-gold: var(--op-gold);
+  --color-op-blue: var(--op-blue);
+  --color-op-paper: var(--op-paper);
+  --color-op-dark: var(--op-dark);
+  --font-sans: var(--font-body);
+  --font-manga: var(--font-manga);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom styles for special effects */
+.text-stroke {
+  -webkit-text-stroke: 1px black;
+  text-shadow: 3px 3px 0px rgba(0,0,0,0.8);
+}
+
+.wanted-poster {
+  background-image: radial-gradient(#f2e3c9, #e0cda0);
+  box-shadow: 10px 10px 20px rgba(0,0,0,0.4);
+  transition: transform 0.3s ease;
+}
+
+.wanted-poster:hover {
+  transform: rotate(2deg) scale(1.05);
+  z-index: 10;
+}
+
+.wave-divider {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.wave-divider svg {
+  position: relative;
+  display: block;
+  width: calc(137% + 1.3px);
+  height: 56px;
+}
+
+.btn-haki:hover {
+  box-shadow: 0 0 15px #D92525;
+  transform: translateY(-2px);
 }
