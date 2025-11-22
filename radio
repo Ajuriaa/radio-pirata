@@ -1,0 +1,91 @@
+#!/usr/bin/env bun
+
+import { spawn } from "bun";
+import { join } from "path";
+
+const ROOT_DIR = import.meta.dir;
+const WEB_DIR = join(ROOT_DIR, "web");
+const SERVER_DIR = join(ROOT_DIR, "server");
+
+// ANSI colors
+const COLORS = {
+  cyan: "\x1b[36m",
+  magenta: "\x1b[35m",
+  reset: "\x1b[0m",
+};
+
+async function prefixOutput(
+  stream: ReadableStream<Uint8Array>,
+  prefix: string,
+  color: string
+) {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const text = decoder.decode(value);
+    const lines = text.split("\n");
+
+    for (const line of lines) {
+      if (line.trim()) {
+        console.log(`${color}${prefix}${COLORS.reset} | ${line}`);
+      }
+    }
+  }
+}
+
+async function start() {
+  console.log("🚀 Starting Radio Pirata...\n");
+
+  // Start web (Next.js)
+  const web = spawn({
+    cmd: ["bun", "run", "dev"],
+    cwd: WEB_DIR,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+
+  // Start server (Sanity)
+  const server = spawn({
+    cmd: ["bun", "run", "dev"],
+    cwd: SERVER_DIR,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+
+  // Handle outputs with colored prefixes
+  prefixOutput(web.stdout, "web   ", COLORS.cyan);
+  prefixOutput(web.stderr, "web   ", COLORS.cyan);
+  prefixOutput(server.stdout, "server", COLORS.magenta);
+  prefixOutput(server.stderr, "server", COLORS.magenta);
+
+  // Handle process termination
+  process.on("SIGINT", () => {
+    web.kill();
+    server.kill();
+    process.exit(0);
+  });
+
+  process.on("SIGTERM", () => {
+    web.kill();
+    server.kill();
+    process.exit(0);
+  });
+
+  // Wait for both processes
+  await Promise.all([web.exited, server.exited]);
+}
+
+const command = process.argv[2];
+
+if (command === "start") {
+  start();
+} else {
+  console.log("Usage: radio <command>");
+  console.log("");
+  console.log("Commands:");
+  console.log("  start    Start both web and server");
+}
