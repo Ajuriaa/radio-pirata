@@ -33,6 +33,8 @@ export interface SiteSettings {
     instagram?: string
     youtube?: string
     spotify?: string
+    twitch?: string
+    ivoox?: string
   }
   footerText: string
   copyright: string

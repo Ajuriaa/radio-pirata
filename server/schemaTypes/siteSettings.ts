@@ -57,10 +57,12 @@ export default defineType({
       title: 'Redes Sociales',
       type: 'object',
       fields: [
-        { name: 'twitter', title: 'Twitter', type: 'url' },
+        { name: 'twitter', title: 'X (Twitter)', type: 'url' },
         { name: 'instagram', title: 'Instagram', type: 'url' },
         { name: 'youtube', title: 'YouTube', type: 'url' },
         { name: 'spotify', title: 'Spotify', type: 'url' },
+        { name: 'twitch', title: 'Twitch', type: 'url' },
+        { name: 'ivoox', title: 'iVoox', type: 'url' },
       ],
     }),
     defineField({

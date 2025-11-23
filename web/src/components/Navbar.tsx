@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { Menu } from 'lucide-react'
-import { Link } from 'react-scroll'
+import { Link, animateScroll as scroll } from 'react-scroll'
 import Image from 'next/image'
 import type { SiteSettings } from '@/lib/sanity'
+import { urlFor } from '@/lib/sanity'
 
 interface NavbarProps {
   settings: SiteSettings
@@ -13,17 +14,34 @@ interface NavbarProps {
 export default function Navbar({ settings }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
+  const scrollToTop = () => {
+    scroll.scrollToTop({ duration: 800, smooth: true })
+  }
+
   return (
     <nav className="fixed w-full z-50 bg-op-dark/90 backdrop-blur-sm border-b-4 border-op-gold">
       <div className="container mx-auto px-6 py-3 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/favicon.webp"
-            alt="RadioPirata Logo"
-            width={32}
-            height={32}
-            className="h-12 w-12"
-          />
+        <div
+          className="flex items-center gap-2 cursor-pointer"
+          onClick={scrollToTop}
+        >
+          {settings.logo ? (
+            <Image
+              src={urlFor(settings.logo).width(48).height(48).url()}
+              alt="RadioPirata Logo"
+              width={48}
+              height={48}
+              className="h-12 w-12"
+            />
+          ) : (
+            <Image
+              src="/favicon.webp"
+              alt="RadioPirata Logo"
+              width={48}
+              height={48}
+              className="h-12 w-12"
+            />
+          )}
           <span className="text-3xl font-[family-name:var(--font-manga)] text-white tracking-wider text-stroke">
             {settings.siteName}
           </span>
@@ -43,15 +61,14 @@ export default function Navbar({ settings }: NavbarProps) {
           ))}
         </div>
         {settings.ctaButton && (
-          <Link
-            to={settings.ctaButton.href.replace('#', '')}
-            smooth={true}
-            duration={800}
-            offset={-80}
+          <a
+            href={settings.ctaButton.href}
+            target="_blank"
+            rel="noopener noreferrer"
             className="hidden md:inline-block bg-op-red text-white font-bold py-2 px-6 rounded-full hover:bg-red-700 transition shadow-lg btn-haki uppercase border-2 border-white cursor-pointer"
           >
             {settings.ctaButton.label}
-          </Link>
+          </a>
         )}
         <button
           className="md:hidden text-white"
@@ -77,16 +94,15 @@ export default function Navbar({ settings }: NavbarProps) {
             </Link>
           ))}
           {settings.ctaButton && (
-            <Link
-              to={settings.ctaButton.href.replace('#', '')}
-              smooth={true}
-              duration={800}
-              offset={-80}
+            <a
+              href={settings.ctaButton.href}
+              target="_blank"
+              rel="noopener noreferrer"
               className="block py-2 text-op-red font-bold cursor-pointer"
               onClick={() => setMobileMenuOpen(false)}
             >
               {settings.ctaButton.label}
-            </Link>
+            </a>
           )}
         </div>
       )}
