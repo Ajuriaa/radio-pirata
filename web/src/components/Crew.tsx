@@ -1,5 +1,6 @@
 import type { CrewMember, CrewSection } from '@/lib/sanity'
 import { urlFor } from '@/lib/sanity'
+import Image from 'next/image'
 
 interface CrewProps {
   section: CrewSection
@@ -31,40 +32,64 @@ export default function Crew({ section, members }: CrewProps) {
           {members.map((member) => (
             <div
               key={member._id}
-              className="wanted-poster p-4 text-center text-gray-900 relative"
+              className="relative w-full transition-transform duration-300 hover:scale-105 hover:rotate-1"
+              style={{ aspectRatio: '3/4' }}
             >
-              <div className="border-b-2 border-gray-800 mb-2">
-                <h3 className="font-serif text-3xl font-bold tracking-widest uppercase">
-                  WANTED
-                </h3>
-                <p className="text-xs mb-1 font-serif">DEAD OR ALIVE</p>
-              </div>
-              <div className="w-full aspect-[4/3] bg-gray-800 mb-3 overflow-hidden border-2 border-gray-700">
+              {/* Photo behind the wanted poster */}
+              <div
+                className="absolute overflow-hidden z-0"
+                style={{
+                  top: '20%',
+                  left: '10%',
+                  width: '80%',
+                  height: '45%',
+                }}
+              >
                 {member.photo ? (
-                  <img
+                  <Image
                     src={urlFor(member.photo).width(300).height(225).url()}
                     alt={member.name}
-                    className="w-full h-full object-cover grayscale contrast-125"
+                    className="w-full h-full object-cover"
+                    width={300}
+                    height={225}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-500">
+                  <div className="w-full h-full flex items-center justify-center bg-gray-300 text-gray-500">
                     No Photo
                   </div>
                 )}
               </div>
-              <h4 className="font-serif text-2xl font-bold uppercase mt-2">
-                {member.name}
-              </h4>
-              <p className="font-[family-name:var(--font-body)] text-sm italic mb-2">
-                {member.role}
-              </p>
-              <div className="font-serif text-xl font-bold flex items-center justify-center gap-1">
-                <span className="text-xs">BERRIES</span>
-                <span>{formatBounty(member.bounty)}</span>
-                <span className="text-xs">-</span>
+
+              {/* Wanted poster on top */}
+              <Image
+                src="/wanted.png"
+                alt="Wanted Poster"
+                className="absolute inset-0 w-full h-full object-contain z-10 pointer-events-none"
+                width={300}
+                height={225}
+              />
+
+              {/* Name */}
+              <div
+                className="absolute w-full text-center z-20"
+                style={{ bottom: '17%' }}
+              >
+                <h4 className="font-serif text-lg md:text-xl font-bold uppercase text-gray-900 px-4">
+                  {member.name}
+                </h4>
+                <p className="text-xs text-gray-700 italic">
+                  {member.role}
+                </p>
               </div>
-              <div className="absolute bottom-2 left-4 font-serif text-xs font-bold opacity-60">
-                MARINE
+
+              {/* Bounty */}
+              <div
+                className="absolute w-full text-center px-4 z-20"
+                style={{ bottom: '11%' }}
+              >
+                <div className="font-serif text-lg font-bold text-gray-900">
+                  {formatBounty(member.bounty)}
+                </div>
               </div>
             </div>
           ))}
