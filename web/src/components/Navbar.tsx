@@ -22,7 +22,7 @@ export default function Navbar({ settings }: NavbarProps) {
             alt="RadioPirata Logo"
             width={32}
             height={32}
-            className="h-8 w-8"
+            className="h-12 w-12"
           />
           <span className="text-3xl font-[family-name:var(--font-manga)] text-white tracking-wider text-stroke">
             {settings.siteName}
