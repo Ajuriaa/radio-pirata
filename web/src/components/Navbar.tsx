@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Skull, Menu } from 'lucide-react'
+import { Menu } from 'lucide-react'
+import { Link } from 'react-scroll'
+import Image from 'next/image'
 import type { SiteSettings } from '@/lib/sanity'
 
 interface NavbarProps {
@@ -15,29 +17,41 @@ export default function Navbar({ settings }: NavbarProps) {
     <nav className="fixed w-full z-50 bg-op-dark/90 backdrop-blur-sm border-b-4 border-op-gold">
       <div className="container mx-auto px-6 py-3 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Skull className="text-op-red h-8 w-8" />
+          <Image
+            src="/favicon.webp"
+            alt="RadioPirata Logo"
+            width={32}
+            height={32}
+            className="h-8 w-8"
+          />
           <span className="text-3xl font-[family-name:var(--font-manga)] text-white tracking-wider text-stroke">
             {settings.siteName}
           </span>
         </div>
         <div className="hidden md:flex gap-8 text-lg font-bold uppercase tracking-wide">
           {settings.navLinks?.map((link, i) => (
-            <a
+            <Link
               key={i}
-              href={link.href}
-              className="hover:text-op-gold transition-colors"
+              to={link.href.replace('#', '')}
+              smooth={true}
+              duration={800}
+              offset={-80}
+              className="hover:text-op-gold transition-colors cursor-pointer"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
         {settings.ctaButton && (
-          <a
-            href={settings.ctaButton.href}
-            className="hidden md:inline-block bg-op-red text-white font-bold py-2 px-6 rounded-full hover:bg-red-700 transition shadow-lg btn-haki uppercase border-2 border-white"
+          <Link
+            to={settings.ctaButton.href.replace('#', '')}
+            smooth={true}
+            duration={800}
+            offset={-80}
+            className="hidden md:inline-block bg-op-red text-white font-bold py-2 px-6 rounded-full hover:bg-red-700 transition shadow-lg btn-haki uppercase border-2 border-white cursor-pointer"
           >
             {settings.ctaButton.label}
-          </a>
+          </Link>
         )}
         <button
           className="md:hidden text-white"
@@ -50,21 +64,29 @@ export default function Navbar({ settings }: NavbarProps) {
       {mobileMenuOpen && (
         <div className="md:hidden bg-op-dark border-t border-gray-700 p-4 text-center">
           {settings.navLinks?.map((link, i) => (
-            <a
+            <Link
               key={i}
-              href={link.href}
-              className="block py-2 hover:text-op-gold"
+              to={link.href.replace('#', '')}
+              smooth={true}
+              duration={800}
+              offset={-80}
+              className="block py-2 hover:text-op-gold cursor-pointer"
+              onClick={() => setMobileMenuOpen(false)}
             >
               {link.label}
-            </a>
+            </Link>
           ))}
           {settings.ctaButton && (
-            <a
-              href={settings.ctaButton.href}
-              className="block py-2 text-op-red font-bold"
+            <Link
+              to={settings.ctaButton.href.replace('#', '')}
+              smooth={true}
+              duration={800}
+              offset={-80}
+              className="block py-2 text-op-red font-bold cursor-pointer"
+              onClick={() => setMobileMenuOpen(false)}
             >
               {settings.ctaButton.label}
-            </a>
+            </Link>
           )}
         </div>
       )}

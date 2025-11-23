@@ -1,4 +1,7 @@
+'use client'
+
 import { Anchor, Headphones } from 'lucide-react'
+import { Link } from 'react-scroll'
 import type { Hero as HeroType } from '@/lib/sanity'
 import { urlFor } from '@/lib/sanity'
 
@@ -31,22 +34,43 @@ export default function Hero({ hero }: HeroProps) {
           {hero.subtitle}
         </p>
         <div className="flex flex-col md:flex-row gap-4 justify-center">
-          {hero.ctaButtons?.map((btn, i) => (
-            <a
-              key={i}
-              href={btn.href}
-              target={btn.href.startsWith('http') ? '_blank' : undefined}
-              rel={btn.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-              className={`font-[family-name:var(--font-manga)] text-2xl py-3 px-8 rounded border-4 border-black transition transform hover:scale-105 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2 ${
-                btn.style === 'spotify'
-                  ? 'bg-green-600 text-white hover:bg-green-500'
-                  : 'bg-op-gold text-op-dark hover:bg-yellow-400'
-              }`}
-            >
-              {btn.icon === 'headphones' && <Headphones />}
-              {btn.label}
-            </a>
-          ))}
+          {hero.ctaButtons?.map((btn, i) => {
+            const isExternal = btn.href.startsWith('http')
+            const baseClassName = `font-[family-name:var(--font-manga)] text-2xl py-3 px-8 rounded border-4 border-black transition transform hover:scale-105 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2 ${
+              btn.style === 'spotify'
+                ? 'bg-green-600 text-white hover:bg-green-500'
+                : 'bg-op-gold text-op-dark hover:bg-yellow-400'
+            }`
+
+            if (isExternal) {
+              return (
+                <a
+                  key={i}
+                  href={btn.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={baseClassName}
+                >
+                  {btn.icon === 'headphones' && <Headphones />}
+                  {btn.label}
+                </a>
+              )
+            }
+
+            return (
+              <Link
+                key={i}
+                to={btn.href.replace('#', '')}
+                smooth={true}
+                duration={800}
+                offset={-80}
+                className={`${baseClassName} cursor-pointer`}
+              >
+                {btn.icon === 'headphones' && <Headphones />}
+                {btn.label}
+              </Link>
+            )
+          })}
         </div>
       </div>
 
