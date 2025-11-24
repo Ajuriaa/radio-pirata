@@ -17,6 +17,9 @@ import Crew from '@/components/Crew'
 import Newsletter from '@/components/Newsletter'
 import Footer from '@/components/Footer'
 
+// Revalidate every 60 seconds
+export const revalidate = 60
+
 async function getData() {
   const [siteSettings, hero, episodes, crewMembers, newsletter, episodesSection, crewSection] =
     await Promise.all([
