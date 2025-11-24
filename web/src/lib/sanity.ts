@@ -74,6 +74,7 @@ export interface CrewMember {
   photo?: SanityImageSource
   bounty: number
   order: number
+  twitter?: string
 }
 
 export interface Newsletter {

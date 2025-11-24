@@ -35,6 +35,12 @@ export default defineType({
       type: 'number',
       description: 'Para ordenar en la página',
     }),
+    defineField({
+      name: 'twitter',
+      title: 'Twitter/X',
+      type: 'url',
+      description: 'Link al perfil de Twitter/X',
+    }),
   ],
   orderings: [
     {

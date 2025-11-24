@@ -29,12 +29,12 @@ export default function Crew({ section, members }: CrewProps) {
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {members.map((member) => (
-            <div
-              key={member._id}
-              className="relative w-full transition-transform duration-300 hover:scale-105 hover:rotate-1"
-              style={{ aspectRatio: '3/4' }}
-            >
+          {members.map((member) => {
+            const content = (
+              <div
+                className="relative w-full transition-transform duration-300 hover:scale-105 hover:rotate-1"
+                style={{ aspectRatio: '3/4' }}
+              >
               {/* Photo behind the wanted poster */}
               <div
                 className="absolute overflow-hidden z-0"
@@ -92,7 +92,24 @@ export default function Crew({ section, members }: CrewProps) {
                 </div>
               </div>
             </div>
-          ))}
+            )
+
+            if (member.twitter) {
+              return (
+                <a
+                  key={member._id}
+                  href={member.twitter}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cursor-pointer"
+                >
+                  {content}
+                </a>
+              )
+            }
+
+            return <div key={member._id}>{content}</div>
+          })}
         </div>
       </div>
     </section>
