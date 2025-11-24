@@ -35,6 +35,7 @@ export interface SiteSettings {
     spotify?: string
     twitch?: string
     ivoox?: string
+    email?: string
   }
   footerText: string
   copyright: string

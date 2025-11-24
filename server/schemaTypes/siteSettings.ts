@@ -63,6 +63,7 @@ export default defineType({
         { name: 'spotify', title: 'Spotify', type: 'url' },
         { name: 'twitch', title: 'Twitch', type: 'url' },
         { name: 'ivoox', title: 'iVoox', type: 'url' },
+        { name: 'email', title: 'Email', type: 'string' },
       ],
     }),
     defineField({
