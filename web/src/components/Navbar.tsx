@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
-import { Link, animateScroll as scroll } from 'react-scroll'
+import { Link as ScrollLink, animateScroll as scroll } from 'react-scroll'
+import NextLink from 'next/link'
 import Image from 'next/image'
 import type { SiteSettings } from '@/lib/sanity'
 import { urlFor } from '@/lib/sanity'
@@ -13,6 +15,8 @@ interface NavbarProps {
 
 export default function Navbar({ settings }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
+  const isHomePage = pathname === '/'
 
   const scrollToTop = () => {
     scroll.scrollToTop({ duration: 800, smooth: true })
@@ -47,18 +51,50 @@ export default function Navbar({ settings }: NavbarProps) {
           </span>
         </div>
         <div className="hidden md:flex gap-8 text-lg font-bold uppercase tracking-wide">
-          {settings.navLinks?.map((link, i) => (
-            <Link
-              key={i}
-              to={link.href.replace('#', '')}
-              smooth={true}
-              duration={800}
-              offset={-80}
-              className="hover:text-op-gold transition-colors cursor-pointer"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {settings.navLinks?.map((link, i) => {
+            const isPageLink = link.href.startsWith('/')
+            const isAnchorLink = link.href.startsWith('#')
+
+            // If it's a page link, use NextLink
+            if (isPageLink) {
+              return (
+                <NextLink
+                  key={i}
+                  href={link.href}
+                  className="hover:text-op-gold transition-colors cursor-pointer"
+                >
+                  {link.label}
+                </NextLink>
+              )
+            }
+
+            // If it's an anchor link and we're not on home page, navigate to home with anchor
+            if (isAnchorLink && !isHomePage) {
+              return (
+                <NextLink
+                  key={i}
+                  href={`/${link.href}`}
+                  className="hover:text-op-gold transition-colors cursor-pointer"
+                >
+                  {link.label}
+                </NextLink>
+              )
+            }
+
+            // If it's an anchor link and we're on home page, use smooth scroll
+            return (
+              <ScrollLink
+                key={i}
+                to={link.href.replace('#', '')}
+                smooth={true}
+                duration={800}
+                offset={-80}
+                className="hover:text-op-gold transition-colors cursor-pointer"
+              >
+                {link.label}
+              </ScrollLink>
+            )
+          })}
         </div>
         {settings.ctaButton && (
           <a
@@ -80,19 +116,53 @@ export default function Navbar({ settings }: NavbarProps) {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-op-dark border-t border-gray-700 p-4 text-center">
-          {settings.navLinks?.map((link, i) => (
-            <Link
-              key={i}
-              to={link.href.replace('#', '')}
-              smooth={true}
-              duration={800}
-              offset={-80}
-              className="block py-2 hover:text-op-gold cursor-pointer"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {settings.navLinks?.map((link, i) => {
+            const isPageLink = link.href.startsWith('/')
+            const isAnchorLink = link.href.startsWith('#')
+
+            // If it's a page link, use NextLink
+            if (isPageLink) {
+              return (
+                <NextLink
+                  key={i}
+                  href={link.href}
+                  className="block py-2 hover:text-op-gold cursor-pointer"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </NextLink>
+              )
+            }
+
+            // If it's an anchor link and we're not on home page, navigate to home with anchor
+            if (isAnchorLink && !isHomePage) {
+              return (
+                <NextLink
+                  key={i}
+                  href={`/${link.href}`}
+                  className="block py-2 hover:text-op-gold cursor-pointer"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </NextLink>
+              )
+            }
+
+            // If it's an anchor link and we're on home page, use smooth scroll
+            return (
+              <ScrollLink
+                key={i}
+                to={link.href.replace('#', '')}
+                smooth={true}
+                duration={800}
+                offset={-80}
+                className="block py-2 hover:text-op-gold cursor-pointer"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {link.label}
+              </ScrollLink>
+            )
+          })}
           {settings.ctaButton && (
             <a
               href={settings.ctaButton.href}
