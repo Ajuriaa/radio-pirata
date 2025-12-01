@@ -18,6 +18,7 @@ export default function AudioForm() {
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const streamRef = useRef<MediaStream | null>(null)
+  const recordingTimeRef = useRef<number>(0)
 
   const startRecording = async () => {
     try {
@@ -36,10 +37,11 @@ export default function AudioForm() {
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        const currentRecordingTime = recordingTimeRef.current
 
-        // Validar duración mínima
-        if (recordingTime < 5) {
-          alert('El audio debe tener al menos 5 segundos de duración')
+        // Validar duración mínima usando el ref
+        if (currentRecordingTime < 5) {
+          alert(`El audio debe tener al menos 5 segundos de duración. Grabaste ${currentRecordingTime} segundos.`)
           // Detener todos los tracks
           if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => track.stop())
@@ -71,10 +73,12 @@ export default function AudioForm() {
       mediaRecorder.start()
       setIsRecording(true)
       setRecordingTime(0)
+      recordingTimeRef.current = 0
 
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => {
           const newTime = prev + 1
+          recordingTimeRef.current = newTime
           // Auto detener a los 2 minutos (120 segundos)
           if (newTime >= 120) {
             stopRecording()
@@ -167,9 +171,11 @@ export default function AudioForm() {
     setAudioFile(null)
     setAudioUrl(null)
     setAudioSource(null)
+    setRecordingTime(0)
+    recordingTimeRef.current = 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Validar nombre
@@ -196,9 +202,96 @@ export default function AudioForm() {
       return
     }
 
-    // TODO: Implement backend submission
-    console.log({ username, topic, audioFile, audioSource })
-    alert('Audio enviado (backend pendiente)')
+    try {
+      // Mostrar loading
+      const submitBtn = document.querySelector('button[type="submit"]') as HTMLButtonElement
+      const originalText = submitBtn?.textContent
+      if (submitBtn) {
+        submitBtn.disabled = true
+        submitBtn.textContent = 'Subiendo audio...'
+      }
+
+      // 1. Obtener presigned URL
+      const uploadUrlResponse = await fetch('/api/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: audioFile.name,
+          contentType: audioFile.type,
+        }),
+      })
+
+      if (!uploadUrlResponse.ok) {
+        throw new Error('Error al obtener URL de subida')
+      }
+
+      const { presignedUrl, key } = await uploadUrlResponse.json()
+
+      // 2. Subir archivo a R2
+      if (submitBtn) submitBtn.textContent = 'Subiendo audio a R2...'
+
+      const uploadResponse = await fetch(presignedUrl, {
+        method: 'PUT',
+        body: audioFile,
+        headers: {
+          'Content-Type': audioFile.type,
+        },
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error('Error al subir el archivo')
+      }
+
+      // 3. Guardar en Supabase
+      if (submitBtn) submitBtn.textContent = 'Guardando información...'
+
+      const publicUrl = `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL || 'https://0d359657a312d76756f342a63687692d.r2.cloudflarestorage.com'}/${key}`
+
+      const submitResponse = await fetch('/api/submit-audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: username.trim(),
+          topic,
+          audio_url: publicUrl,
+          audio_filename: audioFile.name,
+          audio_size: audioFile.size,
+          audio_duration: audioSource === 'recording' ? recordingTimeRef.current : null,
+          audio_source: audioSource,
+        }),
+      })
+
+      if (!submitResponse.ok) {
+        throw new Error('Error al guardar la información')
+      }
+
+      // Éxito!
+      alert('¡Audio enviado correctamente! 🎉\n\nGracias por tu contribución a Radio Pirata.')
+
+      // Limpiar formulario
+      setUsername('')
+      setTopic('')
+      clearAudio()
+      setAcceptTerms(false)
+      setRecordingTime(0)
+      recordingTimeRef.current = 0
+
+      // Restaurar botón
+      if (submitBtn) {
+        submitBtn.disabled = false
+        submitBtn.textContent = originalText
+      }
+    } catch (error) {
+      console.error('Error al enviar audio:', error)
+      alert('❌ Hubo un error al enviar el audio. Por favor intenta de nuevo.')
+
+      // Restaurar botón
+      const submitBtn = document.querySelector('button[type="submit"]') as HTMLButtonElement
+      if (submitBtn) {
+        submitBtn.disabled = false
+        submitBtn.textContent = 'ENVIAR AUDIO'
+      }
+    }
   }
 
   const formatTime = (seconds: number) => {
