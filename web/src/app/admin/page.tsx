@@ -247,6 +247,14 @@ export default function AdminPage() {
               >
                 🔄 Recargar
               </button>
+              <a
+                href="https://studio.radiopirataop.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition shadow-lg border-2 border-white inline-flex items-center"
+              >
+                🎨 Studio
+              </a>
               <button
                 onClick={handleLogout}
                 className="bg-op-red hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition shadow-lg border-2 border-white"
