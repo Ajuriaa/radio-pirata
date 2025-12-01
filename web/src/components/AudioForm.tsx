@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Mic, Upload, X } from 'lucide-react'
 
 export default function AudioForm() {
@@ -12,19 +12,18 @@ export default function AudioForm() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [showTermsModal, setShowTermsModal] = useState(false)
+  const [audioSource, setAudioSource] = useState<'recording' | 'upload' | null>(null)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const chunksRef = useRef<Blob[]>([])
+  const streamRef = useRef<MediaStream | null>(null)
 
   const startRecording = async () => {
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert('Tu navegador no soporta grabación de audio')
-        return
-      }
-
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
+
       const mediaRecorder = new MediaRecorder(stream)
       mediaRecorderRef.current = mediaRecorder
       chunksRef.current = []
@@ -37,10 +36,36 @@ export default function AudioForm() {
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+
+        // Validar duración mínima
+        if (recordingTime < 5) {
+          alert('El audio debe tener al menos 5 segundos de duración')
+          // Detener todos los tracks
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop())
+          }
+          return
+        }
+
+        // Validar tamaño máximo (10MB)
+        if (blob.size > 10 * 1024 * 1024) {
+          alert('El audio supera los 10MB. Graba un audio más corto.')
+          // Detener todos los tracks
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop())
+          }
+          return
+        }
+
         const file = new File([blob], 'recording.webm', { type: 'audio/webm' })
         setAudioFile(file)
         setAudioUrl(URL.createObjectURL(blob))
-        stream.getTracks().forEach(track => track.stop())
+        setAudioSource('recording')
+
+        // Detener todos los tracks
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop())
+        }
       }
 
       mediaRecorder.start()
@@ -48,11 +73,18 @@ export default function AudioForm() {
       setRecordingTime(0)
 
       timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1)
+        setRecordingTime(prev => {
+          const newTime = prev + 1
+          // Auto detener a los 2 minutos (120 segundos)
+          if (newTime >= 120) {
+            stopRecording()
+          }
+          return newTime
+        })
       }, 1000)
     } catch (error) {
       console.error('Error accessing microphone:', error)
-      alert('No se pudo acceder al micrófono')
+      alert('No se pudo acceder al micrófono. Por favor verifica los permisos.')
     }
   }
 
@@ -66,31 +98,106 @@ export default function AudioForm() {
     }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop())
+      }
+    }
+  }, [])
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Validate file size (10MB max)
+      // Validar tamaño (10MB max)
       if (file.size > 10 * 1024 * 1024) {
         alert('El archivo debe ser menor a 10MB')
+        e.target.value = '' // Reset input
         return
       }
-      setAudioFile(file)
-      setAudioUrl(URL.createObjectURL(file))
+
+      // Validar duración del audio
+      const url = URL.createObjectURL(file)
+      const audio = new Audio(url)
+
+      audio.addEventListener('loadedmetadata', () => {
+        const duration = audio.duration
+
+        // Validar duración mínima (5 segundos)
+        if (duration < 5) {
+          alert('El audio debe tener al menos 5 segundos de duración')
+          URL.revokeObjectURL(url)
+          e.target.value = '' // Reset input
+          return
+        }
+
+        // Validar duración máxima (2 minutos = 120 segundos)
+        if (duration > 120) {
+          alert('El audio debe ser de máximo 2 minutos de duración')
+          URL.revokeObjectURL(url)
+          e.target.value = '' // Reset input
+          return
+        }
+
+        // Si había un audio grabado, limpiarlo
+        if (audioSource === 'recording' && audioUrl) {
+          URL.revokeObjectURL(audioUrl)
+        }
+
+        setAudioFile(file)
+        setAudioUrl(url)
+        setAudioSource('upload')
+      })
+
+      audio.addEventListener('error', () => {
+        alert('No se pudo cargar el archivo de audio. Verifica que sea un formato válido.')
+        URL.revokeObjectURL(url)
+        e.target.value = '' // Reset input
+      })
     }
+  }
+
+  const clearAudio = () => {
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl)
+    }
+    setAudioFile(null)
+    setAudioUrl(null)
+    setAudioSource(null)
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validar nombre
+    if (!username.trim()) {
+      alert('Debes ingresar un nombre de usuario')
+      return
+    }
+
+    // Validar tema
+    if (!topic) {
+      alert('Debes seleccionar un tema')
+      return
+    }
+
+    // Validar términos
     if (!acceptTerms) {
       alert('Debes aceptar los términos de uso y privacidad')
       return
     }
+
+    // Validar audio
     if (!audioFile) {
       alert('Debes grabar o subir un audio')
       return
     }
+
     // TODO: Implement backend submission
-    console.log({ username: username || 'Anonimo', topic, audioFile })
+    console.log({ username, topic, audioFile, audioSource })
     alert('Audio enviado (backend pendiente)')
   }
 
@@ -105,21 +212,22 @@ export default function AudioForm() {
       {/* Username */}
       <div>
         <label className="block text-gray-800 font-bold mb-2">
-          Nombre de usuario:
+          Nombre de usuario: <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="Anonimo"
+          placeholder="Tu nombre de usuario"
           className="text-black w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-op-gold focus:outline-none"
+          required
         />
       </div>
 
       {/* Topic */}
       <div>
         <label className="block text-gray-800 font-bold mb-2">
-          Tema:
+          Tema: <span className="text-red-500">*</span>
         </label>
         <select
           value={topic}
@@ -136,15 +244,30 @@ export default function AudioForm() {
 
       {/* Recording Section */}
       <div className="border-2 border-gray-200 rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Mic className="text-op-blue" />
-          <h3 className="text-xl font-bold text-gray-800">Grabar Audio</h3>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Mic className="text-op-blue" />
+            <h3 className="text-xl font-bold text-gray-800">Grabar Audio</h3>
+          </div>
+          {audioSource === 'upload' && (
+            <span className="text-sm text-gray-500 italic">(Deshabilitado - Ya subiste un archivo)</span>
+          )}
         </div>
+        {!isRecording && audioSource !== 'upload' && (
+          <div className="mb-3 space-y-1">
+            <p className="text-sm text-gray-500 italic">
+              ⏱️ Duración: <span className="font-semibold">mínimo 5 segundos, máximo 2 minutos</span>
+            </p>
+            <p className="text-sm text-gray-500 italic">
+              🎙️ La grabación se detendrá automáticamente al llegar a 2 minutos
+            </p>
+          </div>
+        )}
         <div className="flex flex-col md:flex-row items-center gap-4">
           <button
             type="button"
             onClick={startRecording}
-            disabled={isRecording}
+            disabled={isRecording || audioSource === 'upload'}
             className="bg-op-red hover:bg-red-700 text-white font-bold py-3 px-8 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             GRABAR AUDIO
@@ -157,10 +280,25 @@ export default function AudioForm() {
           >
             DETENER
           </button>
-          <div className="flex items-center justify-center w-16 h-16 rounded-full border-4 border-gray-300">
-            <span className="text-2xl font-bold text-gray-700">
-              {isRecording ? formatTime(recordingTime) : '0'}
-            </span>
+          <div className={`flex items-center justify-center w-20 h-20 rounded-full border-4 ${
+            isRecording && recordingTime >= 110
+              ? 'border-red-500 animate-pulse'
+              : isRecording
+                ? 'border-op-red'
+                : 'border-gray-300'
+          }`}>
+            <div className="text-center">
+              <span className={`text-xl font-bold ${
+                isRecording && recordingTime >= 110 ? 'text-red-600' : 'text-gray-700'
+              }`}>
+                {isRecording ? formatTime(recordingTime) : '0:00'}
+              </span>
+              {isRecording && (
+                <div className="text-xs text-gray-500">
+                  / 2:00
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -170,6 +308,11 @@ export default function AudioForm() {
         <div className="flex items-center gap-2 mb-4">
           <Upload className="text-purple-600" />
           <h3 className="text-xl font-bold text-gray-800">Subir Archivo</h3>
+          {(isRecording || audioSource === 'recording') && (
+            <span className="text-sm text-gray-500 italic">
+              (Deshabilitado - {isRecording ? 'Grabando audio' : 'Ya grabaste un audio'})
+            </span>
+          )}
         </div>
         <label className="block">
           <input
@@ -177,15 +320,27 @@ export default function AudioForm() {
             accept="audio/*"
             onChange={handleFileChange}
             className="hidden"
+            disabled={isRecording || audioSource === 'recording'}
           />
-          <span className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg cursor-pointer inline-block transition">
+          <span
+            className={`bg-purple-600 text-white font-bold py-3 px-8 rounded-lg inline-block transition ${
+              isRecording || audioSource === 'recording'
+                ? 'opacity-50 cursor-not-allowed'
+                : 'hover:bg-purple-700 cursor-pointer'
+            }`}
+          >
             Seleccionar archivo de audio
           </span>
         </label>
-        <p className="text-sm text-gray-500 mt-2 italic">
-          Entre 5 segundos y 2 minutos. Máximo 10MB
-        </p>
-        {audioFile && (
+        <div className="mt-2 space-y-1">
+          <p className="text-sm text-gray-500 italic">
+            ⏱️ Duración: <span className="font-semibold">mínimo 5 segundos, máximo 2 minutos</span>
+          </p>
+          <p className="text-sm text-gray-500 italic">
+            📦 Tamaño: <span className="font-semibold">máximo 10MB</span>
+          </p>
+        </div>
+        {audioFile && audioSource === 'upload' && (
           <p className="text-sm text-green-600 mt-2 font-medium">
             ✓ {audioFile.name}
           </p>
@@ -195,6 +350,19 @@ export default function AudioForm() {
       {/* Audio Player */}
       {audioUrl && (
         <div className="border-2 border-gray-200 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-700">
+              {audioSource === 'recording' ? '🎤 Audio grabado' : '📁 Audio subido'}
+            </p>
+            <button
+              type="button"
+              onClick={clearAudio}
+              className="text-red-600 hover:text-red-800 font-medium text-sm flex items-center gap-1"
+            >
+              <X className="w-4 h-4" />
+              Eliminar
+            </button>
+          </div>
           <audio controls className="w-full" src={audioUrl}>
             Tu navegador no soporta el reproductor de audio.
           </audio>
