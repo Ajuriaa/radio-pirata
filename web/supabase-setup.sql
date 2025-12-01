@@ -23,11 +23,21 @@ DROP POLICY IF EXISTS "Anyone can insert submissions" ON audio_submissions;
 DROP POLICY IF EXISTS "Enable insert for everyone" ON audio_submissions;
 DROP POLICY IF EXISTS "allow_anonymous_insert" ON audio_submissions;
 
--- 4. Crear policy para permitir INSERT público
+-- 4. Crear policies
+-- Policy para permitir INSERT público (usuarios envían audios)
 CREATE POLICY "allow_anonymous_insert"
   ON audio_submissions
   FOR INSERT
   TO anon
+  WITH CHECK (true);
+
+-- Policy para permitir SELECT y UPDATE al service role (admin panel)
+-- Nota: service_role bypasea RLS automáticamente, pero las definimos por claridad
+CREATE POLICY "allow_service_role_all"
+  ON audio_submissions
+  FOR ALL
+  TO service_role
+  USING (true)
   WITH CHECK (true);
 
 -- 5. Crear índices para mejorar performance
